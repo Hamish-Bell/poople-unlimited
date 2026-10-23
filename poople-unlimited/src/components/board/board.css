@@ -16,10 +16,21 @@
 
 .intro {
     width: 70%;
-    max-width: 620px;
-    margin: 0 auto;
+    margin: 0 auto 20px;
     text-align: center;
     font-size: 23px;
+    padding-bottom: 10px;
+    position: relative;
+}
+
+.intro::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100vw;
+    border-bottom: 1px solid #424242;
 }
 
 .title-container {
@@ -127,8 +138,8 @@
     flex: 0 1 64px;
     min-width: 0;
 
-    border: 2px solid #686868;
-    border-radius: 4px;
+    border: 3px solid #727171;
+    border-radius: 0px;
 
     background-color: transparent;
     color: #d7dadc;
@@ -147,12 +158,6 @@
 .tile.filled,
 .board-tile.filled {
     border-color: #686868;
-}
-
-/* Typed letters */
-
-.board-tile.typing {
-    border-color: #d7dadc;
 }
 
 /* Correct letter in the correct position */
@@ -332,6 +337,7 @@
 
     box-sizing: border-box;
     padding: 16px;
+    overflow-y: auto;
 
     background-color: rgba(0, 0, 0, 0.75);
     backdrop-filter: blur(4px);
@@ -346,6 +352,7 @@
     max-width: 380px;
     max-height: 85vh;
     overflow-y: auto;
+    margin: auto;
 
     padding: 28px 22px 24px;
     border: 1px solid #444444;
@@ -651,7 +658,7 @@
 
 .results-stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     margin: 16px 0 24px;
 }

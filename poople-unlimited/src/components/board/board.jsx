@@ -146,17 +146,25 @@ function Board() {
     // Distribution relative to the lowest number of words used.
     const distribution = [0, 0, 0, 0, 0];
 
-    savedScores.forEach(score => {
-        const difference = Math.max(0, score.wordsUsed - bestScore);
+        savedScores.forEach(score => {
+        const shortestRouteLength = score.route?.length || score.wordsUsed;
+        const difference = Math.max(
+            0,
+            score.wordsUsed - shortestRouteLength
+        );
+
         distribution[Math.min(difference, 4)]++;
     });
 
     const maxDistribution = Math.max(...distribution, 1);
 
-    const currentDifference =
-        completedScore && bestScore > 0
-            ? Math.max(0, completedScore.wordsUsed - bestScore)
-            : -1;
+    const currentDifference = completedScore
+    ? Math.max(
+          0,
+          completedScore.wordsUsed -
+              (completedScore.route?.length || completedScore.wordsUsed)
+      )
+    : -1;
 
     useEffect(() => {
         const board = document.querySelector('.word-board');
@@ -298,12 +306,12 @@ function Board() {
         <div className="board-container">
             <div className="intro">
                 <div className="title-container">
+                    <h1 className="title">Poople</h1>
                     <img
                         src="/poople.png"
                         alt="Poople logo"
                         className="title-logo"
                     />
-                    <h1 className="title">Poople</h1>
                 </div>
 
                 <p className="caption">
@@ -439,11 +447,6 @@ function Board() {
                             </div>
 
                             <div className="results-stat-card">
-                                <strong>100%</strong>
-                                <span>Win rate*</span>
-                            </div>
-
-                            <div className="results-stat-card">
                                 <strong>
                                     {savedScores.length
                                         ? (
@@ -464,7 +467,7 @@ function Board() {
                             </div>
                         </div>
 
-                        <h3>WORDS OVER BEST</h3>
+                        <h3>WORDS OVER SHORTEST ROUTE</h3>
 
                         <div className="guess-distribution">
                             {distribution.map((count, index) => {
