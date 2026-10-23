@@ -1,229 +1,504 @@
 
-import { useState } from 'react'
-import wordList from "../../wordlist.txt?raw";
-import './board.css'
+import { useCallback, useEffect, useState } from 'react';
+import wordList from '../../wordlist.txt?raw';
+import './board.css';
 
-const TARGET = 'poop'
+const TARGET = 'POOP';
+const STORAGE_KEY = 'poople-scores';
 
-const words = [
-  ...new Set(
+// Parse the word list once.
+const WORDS = new Set(
     wordList
-      .split(/\r?\n/)
-      .map(word => word.trim().toLowerCase())
-      .filter(word => /^[a-z]{4}$/.test(word))
-  ),
-]
+        .split(/\s+/)
+        .map(word => word.trim().toUpperCase())
+        .filter(word => /^[A-Z]{4}$/.test(word))
+);
 
-const wordSet = new Set(words)
+WORDS.add(TARGET);
 
-function buildPaths() {
-  const paths = new Map()
-  const queue = [TARGET]
+// Build word patterns so neighbours can be found without scanning
+// the entire word list for every guess.
+const WORD_PATTERNS = new Map();
 
-  if (!wordSet.has(TARGET)) {
-    console.error('Your wordlist.txt must contain "poop".')
-    return paths
-  }
+for (const word of WORDS) {
+    for (let i = 0; i < 4; i++) {
+        const pattern = word.slice(0, i) + '_' + word.slice(i + 1);
 
-  paths.set(TARGET, TARGET)
-
-  let index = 0
-
-  while (index < queue.length) {
-    const current = queue[index++]
-
-    for (let position = 0; position < 4; position++) {
-      for (let code = 97; code <= 122; code++) {
-        const letter = String.fromCharCode(code)
-
-        if (letter === current[position]) continue
-
-        const next =
-          current.slice(0, position) +
-          letter +
-          current.slice(position + 1)
-
-        if (wordSet.has(next) && !paths.has(next)) {
-          paths.set(next, current)
-          queue.push(next)
+        if (!WORD_PATTERNS.has(pattern)) {
+            WORD_PATTERNS.set(pattern, []);
         }
-      }
-    }
-  }
 
-  return paths
+        WORD_PATTERNS.get(pattern).push(word);
+    }
 }
 
-const paths = buildPaths()
+// Build the graph of words that differ by exactly one letter.
+const NEIGHBOURS = new Map();
+
+for (const word of WORDS) {
+    const neighbours = new Set();
+
+    for (let i = 0; i < 4; i++) {
+        const pattern = word.slice(0, i) + '_' + word.slice(i + 1);
+
+        for (const candidate of WORD_PATTERNS.get(pattern) || []) {
+            if (candidate !== word) {
+                neighbours.add(candidate);
+            }
+        }
+    }
+
+    NEIGHBOURS.set(word, [...neighbours]);
+}
+
+// Find shortest routes to POOP with one BFS.
+const ROUTES_TO_TARGET = new Map([[TARGET, [TARGET]]]);
+const queue = [TARGET];
+
+for (let i = 0; i < queue.length; i++) {
+    const word = queue[i];
+    const route = ROUTES_TO_TARGET.get(word);
+
+    for (const neighbour of NEIGHBOURS.get(word) || []) {
+        if (ROUTES_TO_TARGET.has(neighbour)) continue;
+
+        ROUTES_TO_TARGET.set(neighbour, [neighbour, ...route]);
+        queue.push(neighbour);
+    }
+}
+
+const POSSIBLE_STARTS = [...ROUTES_TO_TARGET.keys()].filter(
+    word => word !== TARGET
+);
+
+function getNeighbours(word) {
+    return NEIGHBOURS.get(word) || [];
+}
+
+function getBestRoute(start) {
+    return ROUTES_TO_TARGET.get(start) || [];
+}
 
 function getRandomStart() {
-  const availableWords = [...paths.keys()].filter(
-    word => word !== TARGET
-  )
+    if (POSSIBLE_STARTS.length === 0) return TARGET;
 
-  if (availableWords.length === 0) {
-    return TARGET
-  }
-
-  return availableWords[
-    Math.floor(Math.random() * availableWords.length)
-  ]
+    return POSSIBLE_STARTS[
+        Math.floor(Math.random() * POSSIBLE_STARTS.length)
+    ];
 }
 
-function differsByOne(first, second) {
-  let differences = 0
+function readSavedScores() {
+    try {
+        const saved = JSON.parse(
+            localStorage.getItem(STORAGE_KEY) || '[]'
+        );
 
-  for (let i = 0; i < 4; i++) {
-    if (first[i] !== second[i]) {
-      differences++
+        return Array.isArray(saved) ? saved : [];
+    } catch {
+        return [];
     }
-  }
-
-  return differences === 1
 }
 
 function Board() {
-  const [startWord] = useState(getRandomStart)
-  const [guesses, setGuesses] = useState([startWord])
-  const [input, setInput] = useState('')
-  const [message, setMessage] = useState('')
-  const [rows, setRows] = useState(2)
-  const [gameWon, setGameWon] = useState(startWord === TARGET)
+    const [initialStart] = useState(() => getRandomStart());
+    const [startWord, setStartWord] = useState(initialStart);
+    const [guesses, setGuesses] = useState([initialStart]);
+    const [input, setInput] = useState('');
+    const [message, setMessage] = useState('');
+    const [gameWon, setGameWon] = useState(initialStart === TARGET);
+    const [showResults, setShowResults] = useState(false);
+    const [savedScores, setSavedScores] = useState(readSavedScores);
+    const [completedScore, setCompletedScore] = useState(null);
 
-  function handleSubmit(event) {
-    event.preventDefault()
+    const bestScore = savedScores.length
+        ? Math.min(...savedScores.map(score => score.wordsUsed))
+        : 0;
 
-    if (gameWon) return
+    // Distribution relative to the lowest number of words used.
+    const distribution = [0, 0, 0, 0, 0];
 
-    const guess = input.trim().toLowerCase()
-    const previousWord = guesses[guesses.length - 1]
+    savedScores.forEach(score => {
+        const difference = Math.max(0, score.wordsUsed - bestScore);
+        distribution[Math.min(difference, 4)]++;
+    });
 
-    if (!/^[a-z]{4}$/.test(guess)) {
-      setMessage('Enter a four-letter word.')
-      return
-    }
+    const maxDistribution = Math.max(...distribution, 1);
 
-    if (!wordSet.has(guess)) {
-      setMessage('That word is not in the dictionary.')
-      return
-    }
+    const currentDifference =
+        completedScore && bestScore > 0
+            ? Math.max(0, completedScore.wordsUsed - bestScore)
+            : -1;
 
-    if (guesses.includes(guess)) {
-      setMessage('You have already used that word.')
-      return
-    }
+    useEffect(() => {
+        const board = document.querySelector('.word-board');
 
-    if (!differsByOne(previousWord, guess)) {
-      setMessage('Change exactly one letter.')
-      return
-    }
+        if (board) {
+            board.scrollTop = board.scrollHeight;
+        }
+    }, [guesses, input]);
 
-    if (!paths.has(guess)) {
-      setMessage('That word cannot reach POOP. Try another!')
-      return
-    }
+    const handleNewGame = useCallback(() => {
+        const nextStart = getRandomStart();
 
-    setGuesses(previous => [...previous, guess])
-    setInput('')
-    setMessage('')
+        setStartWord(nextStart);
+        setGuesses([nextStart]);
+        setInput('');
+        setMessage('');
+        setGameWon(nextStart === TARGET);
+        setShowResults(false);
+        setCompletedScore(null);
+    }, []);
 
-    if (guess === TARGET) {
-      setGameWon(true)
-      setMessage('You got it! 🎉')
-    } else {
-      setRows(previous => Math.max(previous, guesses.length + 2))
-    }
-  }
+    const handleSubmit = useCallback(() => {
+        if (gameWon || showResults) return;
 
-  function handleNewGame() {
-    const nextStart = getRandomStart()
+        const guess = input.trim().toUpperCase();
 
-    setGuesses([nextStart])
-    setInput('')
-    setMessage('')
-    setRows(2)
-    setGameWon(nextStart === TARGET)
-  }
+        if (guess.length !== 4) {
+            setMessage('Enter a four-letter word.');
+            return;
+        }
+
+        if (!WORDS.has(guess)) {
+            setMessage('That word is not in the word list.');
+            return;
+        }
+
+        const previousWord = guesses[guesses.length - 1];
+
+        if (guess === previousWord) {
+            setMessage('Choose a different word.');
+            return;
+        }
+
+        if (!getNeighbours(previousWord).includes(guess)) {
+            setMessage('Change exactly one letter.');
+            return;
+        }
 
 
-  return (
-    <div className="board-container">
-      <div className="intro">
-        <h1 className="title">Poople</h1>
-        <p className="caption">
-          Unlimited version of the site <span className='highlight'>poople.io</span>
-        </p>
-      </div>
+        const updatedGuesses = [...guesses, guess];
 
-      <div className="board-main">
-        <div className="word-board">
-          {Array.from({ length: rows }, (_, rowIndex) => {
-            const word = guesses[rowIndex] || ''
+        setGuesses(updatedGuesses);
+        setInput('');
+        setMessage('');
 
-            return (
-              <div className="board-row" key={rowIndex}>
-                {Array.from({ length: 4 }, (_, letterIndex) => (
-                  <div
-                    className={`board-tile ${
-                      word ? 'filled' : ''
-                    } ${
-                      word === TARGET ? 'correct' : ''
-                    }`}
-                    key={letterIndex}
-                  >
-                    {word[letterIndex]?.toUpperCase() || ''}
+        if (guess === TARGET) {
+            setGameWon(true);
+
+            const score = {
+                id: `${Date.now()}-${Math.random()}`,
+                wordsUsed: updatedGuesses.length,
+                startWord,
+                route: getBestRoute(startWord),
+                date: new Date().toLocaleDateString(),
+            };
+
+            const updatedScores = [...readSavedScores(), score];
+
+            try {
+                localStorage.setItem(
+                    STORAGE_KEY,
+                    JSON.stringify(updatedScores)
+                );
+            } catch {
+                // The game remains playable if storage is unavailable.
+            }
+
+            setSavedScores(updatedScores);
+            setCompletedScore(score);
+            setShowResults(true);
+        }
+    }, [gameWon, showResults, input, guesses, startWord]);
+
+    const handleKey = useCallback((key) => {
+        if (gameWon || showResults) return;
+
+        if (key === 'ENTER') {
+            handleSubmit();
+            return;
+        }
+
+        if (key === 'BACKSPACE' || key === '⌫') {
+            setInput(current => current.slice(0, -1));
+            setMessage('');
+            return;
+        }
+
+        if (/^[A-Z]$/.test(key)) {
+            setInput(current =>
+                current.length < 4 ? current + key : current
+            );
+            setMessage('');
+        }
+    }, [gameWon, showResults, handleSubmit]);
+
+    useEffect(() => {
+        function handlePhysicalKey(event) {
+            if (showResults) {
+                if (event.key === 'Escape') {
+                    setShowResults(false);
+                }
+                return;
+            }
+
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleSubmit();
+            } else if (event.key === 'Backspace') {
+                event.preventDefault();
+                handleKey('BACKSPACE');
+            } else if (/^[a-zA-Z]$/.test(event.key)) {
+                handleKey(event.key.toUpperCase());
+            }
+        }
+
+        window.addEventListener('keydown', handlePhysicalKey);
+
+        return () => {
+            window.removeEventListener('keydown', handlePhysicalKey);
+        };
+    }, [handleSubmit, handleKey, showResults]);
+
+    const keyboardRows = [
+        'QWERTYUIOP'.split(''),
+        'ASDFGHJKL'.split(''),
+        ['ENTER', ...'ZXCVBNM'.split(''), 'BACKSPACE'],
+    ];
+
+    return (
+        <div className="board-container">
+            <div className="intro">
+                <h1 className="title">Poople</h1>
+                <p className="caption">
+                    Unlimited version of the site <span className="highlight">poople.io</span>
+                </p>
+            </div>
+
+            <main className="board-main">
+                <div className="word-board">
+                    {guesses.map((word, rowIndex) => (
+                        <div className="board-row" key={`${word}-${rowIndex}`}>
+                            {word.split('').map((letter, index) => (
+                                <div
+                                    className={`board-tile filled ${
+                                      word === TARGET
+                                          ? 'correct'
+                                          : letter === TARGET[index]
+                                              ? 'correct-letter'
+                                              : ''
+                                  }`}
+                                    key={`${rowIndex}-${index}`}
+                                >
+                                    {letter}
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+
+                    {!gameWon && (
+                        <div className="board-row">
+                            {Array.from({ length: 4 }, (_, index) => (
+                                <div
+                                    className={`board-tile ${
+                                        input[index] ? 'filled typing' : ''
+                                    }`}
+                                    key={index}
+                                >
+                                    {input[index] || ''}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {message && (
+                    <p className="board-message" role="status">
+                        {message}
+                    </p>
+                )}
+
+                {gameWon && (
+                    <button
+                        className="new-game-button"
+                        onClick={handleNewGame}
+                    >
+                        Play Again
+                    </button>
+                )}
+            </main>
+
+            <div className="keyboard">
+              {keyboardRows.map((row, rowIndex) => (
+                  <div className="keyboard-row" key={rowIndex}>
+                      {row.map(key => {
+                          const isAction =
+                              key === 'ENTER' || key === 'BACKSPACE';
+
+                          return (
+                              <button
+                                  type="button"
+                                  key={key}
+                                  className={`keyboard-key ${
+                                      isAction ? 'action-key' : ''
+                                  }`}
+                                  onClick={() => handleKey(key)}
+                                  aria-label={
+                                      key === 'BACKSPACE'
+                                          ? 'Backspace'
+                                          : key
+                                  }
+                              >
+                                  {key === 'BACKSPACE' ? '⌫' : key}
+                              </button>
+                          );
+                      })}
                   </div>
-                ))}
-              </div>
-            )
-          })}
+              ))}
+          </div>
+
+            {showResults && completedScore && (
+                <div
+                    className="results-overlay"
+                    onClick={event => {
+                        if (event.target === event.currentTarget) {
+                            setShowResults(false);
+                        }
+                    }}
+                >
+                    <div
+                        className="results-modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="results-heading"
+                    >
+                        <button
+                            className="results-close"
+                            onClick={() => setShowResults(false)}
+                            aria-label="Close results"
+                        >
+                            ×
+                        </button>
+
+                        <h2 id="results-heading">You got POOP!</h2>
+
+                        <p className="results-subtitle">
+                            You reached the target in{' '}
+                            {completedScore.wordsUsed}{' '}
+                            {completedScore.wordsUsed === 1 ? 'word' : 'words'}.
+                        </p>
+
+                        <h3>STATISTICS</h3>
+
+                        <div className="results-stats-grid">
+                            <div className="results-stat-card">
+                                <strong>{savedScores.length}</strong>
+                                <span>Games played</span>
+                            </div>
+
+                            <div className="results-stat-card">
+                                <strong>100%</strong>
+                                <span>Win rate*</span>
+                            </div>
+
+                            <div className="results-stat-card">
+                                <strong>
+                                    {savedScores.length
+                                        ? (
+                                              savedScores.reduce(
+                                                  (sum, score) =>
+                                                      sum + score.wordsUsed,
+                                                  0
+                                              ) / savedScores.length
+                                          ).toFixed(1)
+                                        : '0'}
+                                </strong>
+                                <span>Average words</span>
+                            </div>
+
+                            <div className="results-stat-card">
+                                <strong>{bestScore || '—'}</strong>
+                                <span>Best score</span>
+                            </div>
+                        </div>
+
+                        <h3>WORDS OVER BEST</h3>
+
+                        <div className="guess-distribution">
+                            {distribution.map((count, index) => {
+                                const isCurrentScore =
+                                    index === 4
+                                        ? currentDifference >= 4
+                                        : currentDifference === index;
+
+                                return (
+                                    <div
+                                        className="distribution-row"
+                                        key={index}
+                                    >
+                                        <span className="distribution-label">
+                                            {index === 4 ? '4+' : index}
+                                        </span>
+
+                                        <div className="distribution-track">
+                                            <div
+                                                className={`distribution-bar ${
+                                                    isCurrentScore
+                                                        ? 'current-score'
+                                                        : ''
+                                                }`}
+                                                style={{
+                                                    width: count
+                                                        ? `${Math.max(
+                                                              (count /
+                                                                  maxDistribution) *
+                                                                  100,
+                                                              8
+                                                          )}%`
+                                                        : '0%',
+                                                }}
+                                            >
+                                                {count > 0 ? count : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+
+                        <h3>SHORTEST ROUTE</h3>
+
+                        <div className="results-route">
+                            {completedScore.route?.length
+                                ? completedScore.route.map((word, index) => (
+                                      <span key={`${word}-${index}`}>
+                                          <strong>{word}</strong>
+                                          {index <
+                                              completedScore.route.length - 1 &&
+                                              ' → '}
+                                      </span>
+                                  ))
+                                : 'No route available.'}
+                        </div>
+
+                        
+                        <button
+                            className="new-game-button results-play-again"
+                            onClick={handleNewGame}
+                        >
+                            Play Again
+                        </button>
+
+                        <p className="score-date">
+                            *Only completed wins are saved, so this is not a
+                            true win rate.
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
-
-        {!gameWon && (
-          <form className="guess-form" onSubmit={handleSubmit}>
-            <input
-              type="text"
-              value={input}
-              onChange={event => {
-                setInput(
-                  event.target.value
-                    .replace(/[^a-zA-Z]/g, '')
-                    .slice(0, 4)
-                )
-              }}
-              placeholder="Enter a word"
-              maxLength={4}
-              autoComplete="off"
-              autoCapitalize="none"
-              aria-label="Enter a four-letter word"
-            />
-
-            <button type="submit">Guess</button>
-          </form>
-        )}
-
-        {message && (
-          <p className="board-message" aria-live="polite">
-            {message}
-          </p>
-        )}
-
-        {gameWon && (
-          <button
-            className="new-game-button"
-            onClick={handleNewGame}
-          >
-            Play Again
-          </button>
-        )}
-
-        <p className="guess-count">
-          Words used: {guesses.length}
-        </p>
-      </div>
-    </div>
-  )
-
+    );
 }
 
-export default Board
+export default Board;
