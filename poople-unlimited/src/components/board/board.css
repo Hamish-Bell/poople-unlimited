@@ -81,9 +81,11 @@
     gap: 12px;
     width: 100%;
     min-width: 0;
+    max-height: 80vh;
     margin: 18px auto 0;
     padding-bottom: 150px;
     box-sizing: border-box;
+    /* background-color: red; */
 }
 
 /* ===== Scrollable word grid ===== */
@@ -194,6 +196,7 @@
     width: 100%;
     max-width: 300px;
     box-sizing: border-box;
+    margin-bottom: -50px;
 }
 
 .guess-count {
