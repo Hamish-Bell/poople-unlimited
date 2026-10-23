@@ -22,6 +22,19 @@
     font-size: 23px;
 }
 
+.title-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.title-logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+}
+
 .intro .title {
     color: #ffffff;
     margin: 0;

@@ -269,9 +269,12 @@ function Board() {
     return (
         <div className="board-container">
             <div className="intro">
-                <h1 className="title">Poople</h1>
+                <div className="title-container">
+                  <img src="/poople.png" alt="Poople logo" className="title-logo" />
+                  <h1 className="title">Poople</h1>
+                </div>
                 <p className="caption">
-                    Unlimited version of the site <span className="highlight">poople.io</span>
+                  Unlimited version of the site <span className="highlight">poople.io</span>
                 </p>
             </div>
 
