@@ -68,7 +68,7 @@ for (let i = 0; i < queue.length; i++) {
 }
 
 const POSSIBLE_STARTS = [...ROUTES_TO_TARGET.keys()].filter(
-    word => word !== TARGET
+    word => word !== TARGET && ROUTES_TO_TARGET.get(word).length <= 6
 );
 
 function getNeighbours(word) {
