@@ -67,6 +67,7 @@ for (let i = 0; i < queue.length; i++) {
     }
 }
 
+// Only allow starting words with routes of 6 words or fewer.
 const POSSIBLE_STARTS = [...ROUTES_TO_TARGET.keys()].filter(
     word => word !== TARGET && ROUTES_TO_TARGET.get(word).length <= 6
 );
@@ -79,12 +80,40 @@ function getBestRoute(start) {
     return ROUTES_TO_TARGET.get(start) || [];
 }
 
+// Select starting words using a 30/50/20 difficulty distribution.
 function getRandomStart() {
     if (POSSIBLE_STARTS.length === 0) return TARGET;
 
-    return POSSIBLE_STARTS[
-        Math.floor(Math.random() * POSSIBLE_STARTS.length)
-    ];
+    const easyStarts = POSSIBLE_STARTS.filter(
+        word => ROUTES_TO_TARGET.get(word).length <= 3
+    );
+
+    const mediumStarts = POSSIBLE_STARTS.filter(
+        word => {
+            const length = ROUTES_TO_TARGET.get(word).length;
+            return length >= 4 && length <= 5;
+        }
+    );
+
+    const hardStarts = POSSIBLE_STARTS.filter(
+        word => ROUTES_TO_TARGET.get(word).length === 6
+    );
+
+    const roll = Math.random();
+
+    let pool;
+
+    if (roll < 0.30 && easyStarts.length > 0) {
+        pool = easyStarts;
+    } else if (roll < 0.80 && mediumStarts.length > 0) {
+        pool = mediumStarts;
+    } else if (hardStarts.length > 0) {
+        pool = hardStarts;
+    } else {
+        pool = POSSIBLE_STARTS;
+    }
+
+    return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function readSavedScores() {
@@ -175,7 +204,6 @@ function Board() {
             setMessage('Change exactly one letter.');
             return;
         }
-
 
         const updatedGuesses = [...guesses, guess];
 
@@ -270,27 +298,36 @@ function Board() {
         <div className="board-container">
             <div className="intro">
                 <div className="title-container">
-                  <img src="/poople.png" alt="Poople logo" className="title-logo" />
-                  <h1 className="title">Poople</h1>
+                    <img
+                        src="/poople.png"
+                        alt="Poople logo"
+                        className="title-logo"
+                    />
+                    <h1 className="title">Poople</h1>
                 </div>
+
                 <p className="caption">
-                  Unlimited version of the site <span className="highlight">poople.io</span>
+                    Unlimited version of the site{' '}
+                    <span className="highlight">poople.io</span>
                 </p>
             </div>
 
             <main className="board-main">
                 <div className="word-board">
                     {guesses.map((word, rowIndex) => (
-                        <div className="board-row" key={`${word}-${rowIndex}`}>
+                        <div
+                            className="board-row"
+                            key={`${word}-${rowIndex}`}
+                        >
                             {word.split('').map((letter, index) => (
                                 <div
                                     className={`board-tile filled ${
-                                      word === TARGET
-                                          ? 'correct'
-                                          : letter === TARGET[index]
-                                              ? 'correct-letter'
-                                              : ''
-                                  }`}
+                                        word === TARGET
+                                            ? 'correct'
+                                            : letter === TARGET[index]
+                                                ? 'correct-letter'
+                                                : ''
+                                    }`}
                                     key={`${rowIndex}-${index}`}
                                 >
                                     {letter}
@@ -332,33 +369,33 @@ function Board() {
             </main>
 
             <div className="keyboard">
-              {keyboardRows.map((row, rowIndex) => (
-                  <div className="keyboard-row" key={rowIndex}>
-                      {row.map(key => {
-                          const isAction =
-                              key === 'ENTER' || key === 'BACKSPACE';
+                {keyboardRows.map((row, rowIndex) => (
+                    <div className="keyboard-row" key={rowIndex}>
+                        {row.map(key => {
+                            const isAction =
+                                key === 'ENTER' || key === 'BACKSPACE';
 
-                          return (
-                              <button
-                                  type="button"
-                                  key={key}
-                                  className={`keyboard-key ${
-                                      isAction ? 'action-key' : ''
-                                  }`}
-                                  onClick={() => handleKey(key)}
-                                  aria-label={
-                                      key === 'BACKSPACE'
-                                          ? 'Backspace'
-                                          : key
-                                  }
-                              >
-                                  {key === 'BACKSPACE' ? '⌫' : key}
-                              </button>
-                          );
-                      })}
-                  </div>
-              ))}
-          </div>
+                            return (
+                                <button
+                                    type="button"
+                                    key={key}
+                                    className={`keyboard-key ${
+                                        isAction ? 'action-key' : ''
+                                    }`}
+                                    onClick={() => handleKey(key)}
+                                    aria-label={
+                                        key === 'BACKSPACE'
+                                            ? 'Backspace'
+                                            : key
+                                    }
+                                >
+                                    {key === 'BACKSPACE' ? '⌫' : key}
+                                </button>
+                            );
+                        })}
+                    </div>
+                ))}
+            </div>
 
             {showResults && completedScore && (
                 <div
@@ -388,7 +425,9 @@ function Board() {
                         <p className="results-subtitle">
                             You reached the target in{' '}
                             {completedScore.wordsUsed}{' '}
-                            {completedScore.wordsUsed === 1 ? 'word' : 'words'}.
+                            {completedScore.wordsUsed === 1
+                                ? 'word'
+                                : 'words'}.
                         </p>
 
                         <h3>STATISTICS</h3>
@@ -469,7 +508,6 @@ function Board() {
                             })}
                         </div>
 
-
                         <h3>SHORTEST ROUTE</h3>
 
                         <div className="results-route">
@@ -485,7 +523,6 @@ function Board() {
                                 : 'No route available.'}
                         </div>
 
-                        
                         <button
                             className="new-game-button results-play-again"
                             onClick={handleNewGame}
