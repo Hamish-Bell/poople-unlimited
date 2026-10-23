@@ -1,26 +1,211 @@
+
+/* Main container */
 .board-container {
     width: 100%;
+    min-height: 100%;
+    background-color: #202020;
+    color: #d7dadc;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 20px 12px 40px;
+    box-sizing: border-box;
 }
 
+/* Heading */
 .intro {
-    /* background-color: red; */
-    width: 50%;
+    width: 70%;
     margin: 0 auto;
-    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     font-size: 23px;
+    max-width: 620px;
+    text-align: center;
 }
 
 .intro .title {
-    color: white;
+    color: #ffffff;
     text-align: center;
-        font-weight: bold;
-
+    font-weight: 900;
+    font-size: 2em;
+    font-family: "Arial Black", sans-serif;
+    letter-spacing: 0.5px;
 }
 
 .intro .caption {
-    color: rgb(191, 191, 191);
-    font-weight: 0px;
+    color: #808080;
+    font-weight: 400;
     text-align: center;
-    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans",
+        "Droid Sans", "Helvetica Neue", sans-serif;
+    font-size: 17px;
+    letter-spacing: 0.25px;
+}
 
+.highlight {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* Main board */
+.board-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    margin: 30px auto 0;
+}
+
+/* Word grid */
+.word-board {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.board-row {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+}
+
+/* Individual tiles */
+.tile,
+.board-tile {
+    width: 68px;
+    height: 68px;
+    border: 2px solid #686868;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+
+    background-color: transparent;
+    color: #d7dadc;
+
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 4px;
+
+    transition: border-color 0.15s ease,
+        background-color 0.2s ease;
+}
+
+/* Tiles containing letters */
+.tile.filled,
+.board-tile.filled {
+    border-color: #686868;
+}
+
+/* Correct word */
+.tile.correct,
+.board-tile.correct {
+    background-color: #538d4e;
+    border-color: #538d4e;
+    color: #ffffff;
+}
+
+/* Guess input */
+.guess-form {
+    width: 100%;
+    max-width: 270px;
+    display: flex;
+    gap: 8px;
+}
+
+.guess-form input {
+    width: 100%;
+    min-width: 0;
+    padding: 12px;
+    box-sizing: border-box;
+
+    background-color: #202020;
+    color: #d7dadc;
+    border: 2px solid #686868;
+    border-radius: 2px;
+    outline: none;
+
+    font-size: 16px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.guess-form input:focus {
+    border-color: #d7dadc;
+}
+
+/* Buttons */
+.guess-form button,
+.new-game-button {
+    border: none;
+    border-radius: 2px;
+    padding: 12px 16px;
+
+    background-color: #565656;
+    color: #ffffff;
+
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.guess-form button:hover,
+.new-game-button:hover {
+    background-color: #707070;
+}
+
+/* Messages */
+.board-message {
+    color: #d7dadc;
+    text-align: center;
+    font-size: 14px;
+    margin: -8px 0 0;
+}
+
+.guess-count {
+    color: #818384;
+    text-align: center;
+    font-size: 13px;
+    margin: -8px 0 0;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .board-container {
+        padding: 16px 8px 30px;
+    }
+
+    .intro {
+        width: 95%;
+    }
+
+    .intro .title {
+        font-size: 2rem;
+    }
+
+    .intro .caption {
+        font-size: 14px;
+    }
+
+    .board-main {
+        margin-top: 24px;
+        gap: 18px;
+    }
+
+    .word-board {
+        gap: 6px;
+    }
+
+    .board-row {
+        gap: 6px;
+    }
+
+    .tile,
+    .board-tile {
+        width: min(68px, 17vw);
+        height: min(68px, 17vw);
+        font-size: clamp(1.4rem, 7vw, 2rem);
+    }
 }
