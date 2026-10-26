@@ -16,9 +16,9 @@
 
 .intro {
     width: 70%;
-    margin: 0 auto 20px;
+    margin: 0 auto 21px;
     text-align: center;
-    font-size: 23px;
+    font-size: 24px;
     padding-bottom: 10px;
     position: relative;
 }
@@ -81,11 +81,13 @@
     gap: 12px;
     width: 100%;
     min-width: 0;
-    max-height: 80vh;
-    margin: 18px auto 0;
+    max-height: 68vh;
+    margin: 40px auto 0;
     padding-bottom: 150px;
     box-sizing: border-box;
     /* background-color: red; */
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 /* ===== Scrollable word grid ===== */
@@ -135,12 +137,12 @@
     justify-content: center;
 
     box-sizing: border-box;
-    width: 64px;
-    height: 64px;
-    flex: 0 1 64px;
+    width: 75px;
+    height: 75px;
+    flex: 0 0 75px;
     min-width: 0;
 
-    border: 1px solid #727171;
+    border: 3px solid #727171;
     border-radius: 0px;
 
     background-color: transparent;
@@ -154,7 +156,6 @@
     transition: border-color 0.15s ease,
         background-color 0.2s ease;
 }
-
 /* Tiles containing letters */
 
 .tile.filled,
