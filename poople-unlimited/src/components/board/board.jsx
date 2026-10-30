@@ -308,7 +308,7 @@ function Board() {
                 <div className="title-container">
                     <h1 className="title">Poople</h1>
                     <img
-                        src="/poople.png"
+                        src="/poople-no-outline.svg"
                         alt="Poople logo"
                         className="title-logo"
                     />

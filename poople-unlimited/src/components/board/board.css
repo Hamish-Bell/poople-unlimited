@@ -73,7 +73,6 @@
 }
 
 /* ===== Main board ===== */
-
 .board-main {
     display: flex;
     flex-direction: column;
@@ -142,7 +141,7 @@
     flex: 0 0 75px;
     min-width: 0;
 
-    border: 3px solid #727171;
+    border: 2px solid #727171;
     border-radius: 0px;
 
     background-color: transparent;
